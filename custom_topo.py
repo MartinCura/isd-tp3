@@ -4,7 +4,7 @@ from mininet.topo import Topo
 
 class DiamondTopo(Topo):
 
-    def build(self, hosts, levels, *args, **kwargs):
+    def build(self, levels, hosts, *args, **kwargs):
         """
         Builds a diamond topology.
 
@@ -20,7 +20,7 @@ class DiamondTopo(Topo):
             self.addLink(switches[0], host)
         for host in host_list[hosts - hosts / 2:]:
             self.addLink(switches[-1], host)
-        # Links switches 
+        # Links switches
         next_switch = 1
         for i in xrange(2 ** (levels - 1) - 1):
             for _ in range(2):
