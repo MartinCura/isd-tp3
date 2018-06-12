@@ -30,11 +30,6 @@ from pox.lib.util import str_to_bool
 import time
 
 log = core.getLogger()
-import pox.log.color
-pox.log.color.launch()
-import pox.log
-pox.log.launch(format="[@@@bold@@@level%(name)-23s@@@reset] " +
-                        "@@@bold%(message)s@@@normal")
 
 # We don't want to flood immediately when a switch connects.
 # Can be overriden on commandline.
@@ -99,6 +94,14 @@ class LearningSwitch (object):
     #log.debug("Initializing LearningSwitch, transparent=%s",
     #          str(self.transparent))
 
+  @staticmethod
+  def log_icmp_msg(icmp_msg):
+    log.debug('Type: %d' % icmp_msg.type)
+    log.debug('Code: {:#x}'.format(icmp_msg.code))
+    log.debug('Checksum: {:#x}'.format(icmp_msg.csum))
+    log.debug('Payload: {}'.format(icmp_msg.payload))
+
+
   def _handle_PacketIn (self, event):
     """
     Handle packet in messages from the switch to implement above algorithm.
@@ -106,19 +109,7 @@ class LearningSwitch (object):
 
     packet = event.parsed
 
-    # Logear el protocolo, si se trata de TCP detectar si es un SYN
-    tcp_found = packet.find('tcp')
-    if tcp_found:
-      log.info("Protocolo del Mensaje: TCP")
-      if tcp_found.SYN:
-        log.info("SYN Detectado")
-    udp_found = packet.find('udp')
-    if udp_found:
-      log.info("Protocolo del Mensaje: UDP")
-
-    icmp_found = packet.find('icmp')
-    if icmp_found:
-      log.info("Protocolo del Mensaje: ICMP")
+    # log.debug("Received from port {} with src {} and dst {}".format(event.port, packet.src, packet.dst))
 
     def flood (message = None):
       """ Floods the packet """
@@ -184,6 +175,22 @@ class LearningSwitch (object):
               % (packet.src, packet.dst, dpid_to_str(event.dpid), port))
           drop(10)
           return
+
+        # Logear el protocolo, si se trata de TCP detectar si es un SYN
+        tcp_found = packet.find('tcp')
+        if tcp_found:
+          log.debug("Protocolo del Mensaje: TCP")
+          if tcp_found.SYN:
+            log.debug("SYN Detectado")
+        udp_found = packet.find('udp')
+        if udp_found:
+          log.debug("Protocolo del Mensaje: UDP")
+
+        icmp_pk = packet.find('icmp')
+        if icmp_pk:
+          log.debug("Protocolo del Mensaje: ICMP")
+          self.log_icmp_msg(icmp_pk)
+
         # 6
         log.info("Creando flujo para %s.%i -> %s.%i" %
                   (packet.src, event.port, packet.dst, port))
